@@ -1,0 +1,105 @@
+# Donk Project
+# Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
+# SPDX-License-Identifier: MIT
+workspace(name = "donk")
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "wso_third_party_buildfiles",
+    sha256 = "7a24d1b9a7f1be0c3f5f13603785c7f807c94436696ed8c1d38c7fe89684dd1f",
+    strip_prefix = "third_party_buildfiles-d879dce934d8104f8a694d58aa006d3198dac6c4",
+    urls = ["https://github.com/warriorstar-orion/third_party_buildfiles/archive/d879dce934d8104f8a694d58aa006d3198dac6c4.tar.gz"],
+)
+
+load("@wso_third_party_buildfiles//:deps.bzl", "wso_deps")
+
+wso_deps()
+
+http_archive(
+    name = "com_google_absl",
+    sha256 = "8400c511d64eb4d26f92c5ec72535ebd0f843067515244e8b50817b0786427f9",
+    strip_prefix = "abseil-cpp-c512f118dde6ffd51cb7d8ac8804bbaf4d266c3a",
+    urls = ["https://github.com/abseil/abseil-cpp/archive/c512f118dde6ffd51cb7d8ac8804bbaf4d266c3a.zip"],
+)
+
+http_archive(
+    name = "entt",
+    strip_prefix = "entt-18832fcb3765e02e66b033a0cf723683762463c0",
+    urls = [
+      "https://github.com/skypjack/entt/archive/18832fcb3765e02e66b033a0cf723683762463c0.tar.gz",
+    ],
+)
+
+# @tgcc is the representation of any transpiled codebase. Assuming this
+# workspace is in the path root/donk/interpreter, the 'path' argument below
+# assumes that the transpiled codebase is in root/tgcc, but this can be changed
+# to any absolute path where the transpiled code was output to.
+new_local_repository(
+    name = "tgcc",
+    build_file_content = """
+# Donk Project
+# Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
+# SPDX-License-Identifier: MIT
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+config_setting(
+    name = "darwin",
+    constraint_values = [
+        "@bazel_tools//platforms:osx",
+        "@bazel_tools//platforms:x86_64",
+    ],
+)
+
+config_setting(
+    name = "windows",
+    values = {"cpu": "x64_windows"},
+)
+
+cc_library(
+    name = "tgcc",
+    srcs = glob(["**/*.cc"]),
+    hdrs = glob(["**/*.h"]),
+    copts = select({
+        # TODO: Find appropriate strictness flags for MSVC
+        "//:windows": [
+            "/await",
+            "/analyze:WX-",
+            "/analyze:max_paths 512",
+            "/std=c++17",
+        ],
+        "//:darwin": [
+            "-Wall",
+            "-Wextra",
+            "-Wfloat-equal",
+            "-Wundef",
+            "-Wcast-align",
+            "-Wwrite-strings",
+            "-Wmissing-declarations",
+            "-Wredundant-decls",
+            "-Wshadow",
+            "-Woverloaded-virtual",
+            "-std=c++2a",
+            "-fcoroutines-ts",
+        ],
+    }),
+    include_prefix = "tgcc",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@donk//api",
+        "@donk//core",
+        "@donk//interpreter",
+        "@spdlog",
+    ],
+)
+
+filegroup(
+    name = "data",
+    srcs = glob([
+        "*.dm*",
+    ]),
+    visibility = ["//visibility:public"],
+)
+""",
+    path = "../../tgcc",
+)

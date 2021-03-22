@@ -1,0 +1,48 @@
+# Donk Project
+# Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
+# SPDX-License-Identifier: MIT
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "interpreter",
+    srcs = [
+        "ecs_manager.cc",
+        "importer.cc",
+        "interpreter.cc",
+        "scheduler.cc",
+    ],
+    hdrs = [
+        "ecs_manager.h",
+        "importer.h",
+        "interpreter.h",
+        "scheduler.h",
+        "timekeeper.h",
+    ],
+    copts = select({
+        "//:windows": [
+            "/await",
+            "/analyze:WX-",
+            "/analyze:max_paths 512",
+            "/std:c++17",
+        ],
+        "//:darwin": [
+            "-std=c++2a",
+            "-fcoroutines-ts",
+        ],
+    }),
+    include_prefix = "donk/interpreter",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@bazel_tools//tools/cpp/runfiles",
+        "@com_google_absl//absl/functional:bind_front",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@donk//api",
+        "@donk//core",
+        "@donk//image",
+        "@entt",
+        "@cppcoro",
+        "@fmtlib",
+        "@spdlog",
+    ],
+)

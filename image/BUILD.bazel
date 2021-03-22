@@ -1,0 +1,23 @@
+# Donk Project
+# Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
+# SPDX-License-Identifier: MIT
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "image",
+    hdrs = [
+        "dmi_parser.h",
+        "dmi_reader.h",
+    ],
+    srcs = [
+        "dmi_parser.cc",
+        "dmi_reader.cc",
+    ],
+    deps = [
+        "@peglib",
+        "@fmtlib",
+        "@libpng",
+    ],
+    visibility = ["//visibility:public"],
+    include_prefix = "donk/image",
+)

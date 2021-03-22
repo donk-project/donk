@@ -1,0 +1,31 @@
+# Donk Project
+# Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
+# SPDX-License-Identifier: MIT
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "runner",
+    srcs = [
+        "runner.cc",
+        "runner.h",
+    ],
+    copts = select({
+        "//:windows": [
+            "/await",
+            "/analyze:WX-",
+            "/analyze:max_paths 512",
+            "/std:c++17",
+        ],
+        "//:darwin": [
+            "-std=c++2a",
+            "-fcoroutines-ts",
+        ],
+    }),
+    deps = [
+        "@donk//api",
+        "@donk//core",
+        "@donk//interpreter",
+        "@tgcc",
+        "@spdlog",
+    ],
+)
