@@ -75,7 +75,7 @@ class iota_t {
     return var_table_.const_string(s);
   }
 
-  donk::uuid_t uuid_ = 0;
+  donk::entity_id entity_id_ = 0;
 
   friend std::ostream& operator<<(std::ostream& out, donk::iota_t* iota) {
     if (iota->var_table_.HasTypedVar<std::string>("key")) {

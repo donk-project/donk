@@ -35,7 +35,7 @@ class DMIReader {
   int get_image_height();
 
  private:
-  const int kPngSigSize = 8;
+  static constexpr int kPngSigSize = 8;
   std::string filename_;
   std::string dmi_data_ = "";
   int image_width_;

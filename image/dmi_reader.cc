@@ -9,12 +9,14 @@
 
 #include "fmt/format.h"
 #include "png.h"
+#include "spdlog/spdlog.h"
 
 namespace donk {
 namespace image {
 
 void DMIReader::Read() {
-  std::ifstream file(filename_);
+  spdlog::info("DMIReader::Read(): {}", filename_);
+  std::ifstream file(filename_, std::ios_base::in | std::ios_base::binary);
   if (file.is_open()) {
     bool valid = validate(file);
     if (!valid) {
@@ -59,13 +61,16 @@ void DMIReader::Read() {
 }
 
 bool DMIReader::validate(std::istream& source) {
-  png_byte pngsig[kPngSigSize];
+  png_byte pngsig[8];
   int is_png = 0;
 
-  source.read((char*)pngsig, kPngSigSize);
-  if (!source.good()) return false;
+  source.read((char*)pngsig, 8);
+  if (!source.good()) {
+    throw std::system_error(errno, std::system_category(),
+                            "failed to read sig");
+  }
 
-  is_png = png_sig_cmp(pngsig, 0, kPngSigSize);
+  is_png = png_sig_cmp(pngsig, 0, 8);
   return (is_png == 0);
 }
 

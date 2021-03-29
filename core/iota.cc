@@ -45,7 +45,7 @@ std::shared_ptr<var_t> iota_t::v(const std::string& s) {
 const path_t iota_t::GetPath() const { return path_; }
 
 void iota_t::Apply(preset_t preset) {
-  uuid_ = preset.uuid();
+  entity_id_ = preset.entity_id();
   var_table_.RegisterPreset(preset);
 }
 

@@ -2,6 +2,7 @@
 # Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 # SPDX-License-Identifier: MIT
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//:defs.bzl", "WINDOWS_DEFAULT_COPTS", "DARWIN_DEFAULT_COPTS")
 
 cc_library(
     name = "interpreter",
@@ -19,24 +20,13 @@ cc_library(
         "timekeeper.h",
     ],
     copts = select({
-        "//:windows": [
-            "/await",
-            "/analyze:WX-",
-            "/analyze:max_paths 512",
-            "/std:c++17",
-        ],
-        "//:darwin": [
-            "-std=c++2a",
-            "-fcoroutines-ts",
-        ],
+        "//:windows": WINDOWS_DEFAULT_COPTS,
+        "//:darwin": DARWIN_DEFAULT_COPTS,
     }),
     include_prefix = "donk/interpreter",
     visibility = ["//visibility:public"],
     deps = [
         "@bazel_tools//tools/cpp/runfiles",
-        "@com_google_absl//absl/functional:bind_front",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
         "@donk//api",
         "@donk//core",
         "@donk//image",

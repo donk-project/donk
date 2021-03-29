@@ -2,6 +2,7 @@
 # Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 # SPDX-License-Identifier: MIT
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//:defs.bzl", "WINDOWS_DEFAULT_COPTS", "DARWIN_DEFAULT_COPTS")
 
 cc_library(
     name = "mapping",
@@ -13,33 +14,12 @@ cc_library(
         "tgm_parser.h",
     ],
     copts = select({
-        # TODO: Find appropriate strictness flags for MSVC
-        "//:windows": [
-            "/await",
-            "/analyze:WX-",
-            "/analyze:max_paths 512",
-            "/std=c++17",
-        ],
-        "//:darwin": [
-            "-std=c++17",
-            "-Wall",
-            "-Wextra",
-            "-Wfloat-equal",
-            "-Wundef",
-            "-Wcast-align",
-            "-Wwrite-strings",
-            "-Wmissing-declarations",
-            "-Wredundant-decls",
-            "-Wshadow",
-            "-Woverloaded-virtual",
-            "-std=c++2a",
-            "-fcoroutines-ts",
-        ],
+        "//:windows": WINDOWS_DEFAULT_COPTS,
+        "//:darwin": DARWIN_DEFAULT_COPTS,
     }),
     include_prefix = "donk/mapping",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_absl//absl/strings",
         "@donk//core",
         "@peglib",
         "@spdlog",

@@ -2,6 +2,7 @@
 # Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 # SPDX-License-Identifier: MIT
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//:defs.bzl", "WINDOWS_DEFAULT_COPTS", "DARWIN_DEFAULT_COPTS")
 
 cc_library(
     name = "image",
@@ -17,7 +18,12 @@ cc_library(
         "@peglib",
         "@fmtlib",
         "@libpng",
+        "@spdlog",
     ],
+    copts = select({
+        "//:windows": WINDOWS_DEFAULT_COPTS,
+        "//:darwin": DARWIN_DEFAULT_COPTS,
+    }),
     visibility = ["//visibility:public"],
     include_prefix = "donk/image",
 )

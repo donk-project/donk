@@ -4,6 +4,7 @@
 #ifndef __DONK_INTERPRETER_IMPORTER_H__
 #define __DONK_INTERPRETER_IMPORTER_H__
 
+#include <filesystem>
 #include <map>
 #include <string>
 #include <vector>
@@ -32,14 +33,16 @@ class Importer {
   // Parses data from discovered resource files.
   void Parse();
 
-  std::string get_root() { return root_; }
+  std::string get_root() { return root_.string(); }
   std::map<std::string, donk::mapping::map_t>& maps() { return maps_; }
   std::map<std::string, donk::image::dmi_data_t>& icon_data() {
     return icon_data_;
   }
 
  private:
-  std::string root_;
+  bool ParseManifest(const std::string& path, std::string* error);
+
+  std::filesystem::path root_;
   std::string runfile_path_;
   std::vector<std::filesystem::path> dmi_paths_;
   std::vector<std::filesystem::path> dmm_paths_;

@@ -8,8 +8,6 @@
 #include <type_traits>
 #include <variant>
 
-#include "absl/memory/memory.h"
-#include "absl/strings/str_split.h"
 #include "donk/api/client.h"
 #include "donk/api/database.h"
 #include "donk/api/database/query.h"
@@ -140,36 +138,36 @@ Interpreter::FindPrototype(path_t path) {
 }
 
 void Interpreter::UpdateUuidLinks(
-    std::map<donk::uuid_t, std::vector<std::string>>& update_uuid_varnames) {
+    std::map<donk::entity_id, std::vector<std::string>>&
+        update_entity_id_varnames) {
   auto view = EcsManager()
                   ->registry()
-                  .view<donk::uuid_t, std::shared_ptr<donk::iota_t>>();
-  std::map<donk::uuid_t, std::shared_ptr<donk::iota_t>> mapping;
+                  .view<donk::entity_id, std::shared_ptr<donk::iota_t>>();
+  std::map<donk::entity_id, std::shared_ptr<donk::iota_t>> mapping;
 
   for (auto entity : view) {
-    auto& uuid = view.get<donk::uuid_t>(entity);
+    auto& entity_id = view.get<donk::entity_id>(entity);
     auto iota = view.get<std::shared_ptr<donk::iota_t>>(entity);
-    mapping.insert_or_assign(uuid, iota);
+    mapping.insert_or_assign(entity_id, iota);
   }
 
   auto view2 = ecs_manager_->registry_
-                   .view<donk::uuid_t, std::shared_ptr<donk::iota_t>>();
+                   .view<donk::entity_id, std::shared_ptr<donk::iota_t>>();
   for (auto entity : view2) {
-    auto& uuid = view.get<donk::uuid_t>(entity);
+    auto& entity_id = view.get<donk::entity_id>(entity);
     auto& var_table =
         view.get<std::shared_ptr<donk::iota_t>>(entity)->var_table();
-    auto uuid_varnames = update_uuid_varnames.find(uuid);
-    if (uuid_varnames != update_uuid_varnames.end()) {
-      spdlog::info("Updating UUID {}", uuid);
-      for (auto& name : uuid_varnames->second) {
-        spdlog::info("UUID {} Name {}", uuid, name);
-        auto old_uuid = var_table.Lookup(name)->get_uuid();
-        auto redirect_to = mapping.find(old_uuid);
+    auto entity_id_varnames = update_entity_id_varnames.find(entity_id);
+    if (entity_id_varnames != update_entity_id_varnames.end()) {
+      for (auto& name : entity_id_varnames->second) {
+        auto old_entity_id = var_table.Lookup(name)->get_entity_id();
+        auto redirect_to = mapping.find(old_entity_id);
         if (redirect_to != mapping.end()) {
           auto var = var_table.Lookup(name);
           spdlog::info(
-              "Update var_table {} uuid/{}, var={}, from uuid {} to iota={}",
-              var_table, uuid, *var, old_uuid, *redirect_to->second);
+              "Update var_table {} entity_id/{}, var={}, from entity_id {} to "
+              "iota={}",
+              var_table, entity_id, *var, old_entity_id, *redirect_to->second);
           *var = redirect_to->second;
         }
       }

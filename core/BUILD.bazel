@@ -1,17 +1,18 @@
 # Donk Project
 # Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 # SPDX-License-Identifier: MIT
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//:defs.bzl", "DARWIN_DEFAULT_COPTS", "WINDOWS_DEFAULT_COPTS")
 
 cc_library(
     name = "core",
     srcs = [
+        "args.cc",
         "assoc_list.cc",
-        "iota.cc",
         "ctxt.cc",
+        "iota.cc",
         "path.cc",
         "procs.cc",
-        "args.cc",
         "vars.cc",
     ],
     hdrs = [
@@ -28,35 +29,24 @@ cc_library(
         "vars.h",
     ],
     copts = select({
-        # TODO: Find appropriate strictness flags for MSVC
-        "//:windows": [
-            "/await",
-            "/analyze:WX-",
-            "/analyze:max_paths 512",
-            "/std=c++17",
-        ],
-        "//:darwin": [
-            "-std=c++17",
-            "-Wall",
-            "-Wextra",
-            "-Wfloat-equal",
-            "-Wundef",
-            "-Wcast-align",
-            "-Wwrite-strings",
-            "-Wmissing-declarations",
-            "-Wredundant-decls",
-            "-Wshadow",
-            "-Woverloaded-virtual",
-            "-std=c++2a",
-            "-fcoroutines-ts",
-        ],
+        "//:windows": WINDOWS_DEFAULT_COPTS,
+        "//:darwin": DARWIN_DEFAULT_COPTS,
     }),
     include_prefix = "donk/core",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_absl//absl/strings",
+        "@cppcoro",
         "@fmtlib",
         "@spdlog",
-        "@cppcoro",
+    ],
+)
+
+cc_test(
+    name = "path_test",
+    srcs = ["path_test.cc"],
+    deps = [
+        ":core",
+        "@boost_ext_ut",
+        "@fmtlib",
     ],
 )

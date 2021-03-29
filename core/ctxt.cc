@@ -87,7 +87,9 @@ running_proc_info proc_ctxt_t::Unimplemented(std::string proc_name) {
 void proc_ctxt_t::Broadcast(std::shared_ptr<var_t> receiver_list,
                             std::shared_ptr<var_t> obj) {}
 
-running_proc_info proc_ctxt_t::Spawn(transpiled_proc spawn) {}
+running_proc_info proc_ctxt_t::Spawn(transpiled_proc spawn) {
+  return Unimplemented("spawned proc");
+}
 
 std::shared_ptr<iota_t> proc_ctxt_t::Global() { return interpreter_->Global(); }
 

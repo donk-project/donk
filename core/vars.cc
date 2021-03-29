@@ -78,12 +78,12 @@ std::string var_t::get_string() {
   }
 }
 
-donk::uuid_t var_t::get_uuid() {
+donk::entity_id var_t::get_entity_id() {
   try {
-    return std::get<donk::uuid_t>(data_);
+    return std::get<donk::entity_id>(data_);
   } catch (const std::bad_variant_access& e) {
     throw std::runtime_error(fmt::format(
-        "uuid requested in var without one: {}, {}", *this, e.what()));
+        "entity_id requested in var without one: {}, {}", *this, e.what()));
   }
 }
 
@@ -236,8 +236,8 @@ var_t& var_t::operator=(var_t v) {
   return *this;
 }
 
-var_t& var_t::operator=(donk::uuid_t uuid) {
-  data_.emplace<donk::uuid_t>(uuid);
+var_t& var_t::operator=(donk::entity_id entity_id) {
+  data_.emplace<donk::entity_id>(entity_id);
   return *this;
 }
 

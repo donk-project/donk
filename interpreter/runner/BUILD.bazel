@@ -2,6 +2,7 @@
 # Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 # SPDX-License-Identifier: MIT
 load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("//:defs.bzl", "WINDOWS_DEFAULT_COPTS", "DARWIN_DEFAULT_COPTS")
 
 cc_binary(
     name = "runner",
@@ -10,16 +11,8 @@ cc_binary(
         "runner.h",
     ],
     copts = select({
-        "//:windows": [
-            "/await",
-            "/analyze:WX-",
-            "/analyze:max_paths 512",
-            "/std:c++17",
-        ],
-        "//:darwin": [
-            "-std=c++2a",
-            "-fcoroutines-ts",
-        ],
+        "//:windows": WINDOWS_DEFAULT_COPTS,
+        "//:darwin": DARWIN_DEFAULT_COPTS,
     }),
     deps = [
         "@donk//api",

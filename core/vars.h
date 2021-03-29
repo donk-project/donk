@@ -26,7 +26,7 @@ namespace donk {
 
 class preset_t;
 
-using uuid_t = unsigned int;
+using entity_id = unsigned int;
 
 namespace networking {
 class ProtoSerializers;
@@ -61,7 +61,7 @@ class var_t {
   int get_int();
   float get_float();
   std::string get_string();
-  uuid_t get_uuid();
+  entity_id get_entity_id();
   path_t get_path();
   prefab_t get_prefab();
   std::shared_ptr<resource_t> get_resource();
@@ -88,7 +88,7 @@ class var_t {
   var_t& operator=(std::shared_ptr<resource_t>);
   var_t& operator=(std::shared_ptr<var_t>);
   var_t& operator=(std::string);
-  var_t& operator=(uuid_t);
+  var_t& operator=(entity_id);
   var_t& operator=(var_t);
   var_t& operator=(path_t);
 
@@ -100,7 +100,7 @@ class var_t {
   std::shared_ptr<var_t> operator-(std::shared_ptr<var_t>);
   std::shared_ptr<var_t> operator*(std::shared_ptr<var_t>);
 
-  std::variant<int, float, std::string, uuid_t, std::shared_ptr<iota_t>,
+  std::variant<int, float, std::string, entity_id, std::shared_ptr<iota_t>,
                std::shared_ptr<resource_t>, prefab_t,
                std::shared_ptr<assoc_list_t>, path_t>
       data_;
@@ -203,8 +203,8 @@ struct fmt::formatter<::donk::var_t> {
     void operator()(const std::shared_ptr<::donk::iota_t>& i) {
       fmt::format_to(ctx_.out(), "{}", *i);
     }
-    void operator()(const donk::uuid_t& uuid_) {
-      fmt::format_to(ctx_.out(), "uuid/{}", uuid_);
+    void operator()(const donk::entity_id& entity_id_) {
+      fmt::format_to(ctx_.out(), "entity_id/{}", entity_id_);
     }
     void operator()(const donk::prefab_t& prefab) {
       fmt::format_to(ctx_.out(), "{}", prefab);

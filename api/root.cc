@@ -449,11 +449,11 @@ donk::running_proc locate(donk::proc_ctxt_t& ctxt, donk::proc_args_t& args) {
   auto z = args.v(2)->get_int();
   auto map_tile = ctxt.map()->index(x, y, z);
   if (map_tile == nullptr) {
-    spdlog::critical("//locate has null map_tile at {} {} {}", x, y, z);
+    spdlog::critical("/locate has null map_tile at {} {} {}", x, y, z);
   }
   auto turf = map_tile->turf();
   if (!turf) {
-    spdlog::critical("//locate has null turf at {} {} {}", x, y, z);
+    spdlog::critical("/locate has null turf at {} {} {}", x, y, z);
   }
   ctxt.Result(turf);
   co_return;

@@ -50,38 +50,39 @@ class EcsManager {
  public:
   EcsManager()
       : last_created_(1),
-        can_update_uuid_(true),
-        active_uuids_(),
-        highest_known_uuid_(0),
+        can_update_entity_id_(true),
+        active_entity_ids_(),
+        highest_known_entity_id_(0),
         inserted_count_(0) {}
 
   void Update(float);
 
-  donk::uuid_t Register(std::shared_ptr<iota_t>);
+  donk::entity_id Register(std::shared_ptr<iota_t>);
 
   void RegisterManually(std::shared_ptr<iota_t>, donk::preset_t&);
 
   entt::registry& registry() { return registry_; }
 
   void Merge(donk::preset_t preset) {
-    auto entity = GetRegistered(preset.uuid());
+    auto entity = GetRegistered(preset.entity_id());
     auto view = registry().view<std::shared_ptr<donk::iota_t>>();
     auto iota = view.get<std::shared_ptr<donk::iota_t>>(entity);
     iota->Apply(preset);
   }
 
-  entt::entity GetRegistered(donk::uuid_t uuid) {
+  entt::entity GetRegistered(donk::entity_id entity_id) {
     for (auto& pair : entities_) {
-      if (pair.first == uuid) {
+      if (pair.first == entity_id) {
         return pair.second;
       }
     }
-    throw std::runtime_error(fmt::format("unable to find uuid {}", uuid));
+    throw std::runtime_error(
+        fmt::format("unable to find entity_id {}", entity_id));
   }
 
-  bool IsRegistered(donk::uuid_t uuid) {
+  bool IsRegistered(donk::entity_id entity_id) {
     for (auto& pair : entities_) {
-      if (pair.first == uuid) {
+      if (pair.first == entity_id) {
         return true;
       }
     }
@@ -89,12 +90,12 @@ class EcsManager {
   }
 
  private:
-  donk::uuid_t last_created_;
+  donk::entity_id last_created_;
   entt::registry registry_;
-  bool can_update_uuid_;
-  std::set<donk::uuid_t> active_uuids_;
-  std::map<donk::uuid_t, entt::entity> entities_;
-  int highest_known_uuid_;
+  bool can_update_entity_id_;
+  std::set<donk::entity_id> active_entity_ids_;
+  std::map<donk::entity_id, entt::entity> entities_;
+  int highest_known_entity_id_;
   int inserted_count_;
   friend class ::pollux::networking::ProtoSerializers;
   friend class ::pollux::networking::ProtoDeserializers;

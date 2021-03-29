@@ -12,9 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
-#include "absl/strings/match.h"
-#include "absl/strings/str_split.h"
 #include "cppcoro/sync_wait.hpp"
 #include "donk/api/client.h"
 #include "donk/api/database.h"
@@ -82,8 +79,8 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
   void Import(std::string root_filename);
   void ResetMapRoster(donk::mapping::MapRoster& roster);
   void ResetMaps();
-  void UpdateUuidLinks(
-      std::map<donk::uuid_t, std::vector<std::string>>& update_uuid_varnames);
+  void UpdateUuidLinks(std::map<donk::entity_id, std::vector<std::string>>&
+                           update_entity_id_varnames);
 
   // Differs from world() in that we are returning the known coretype.
   std::shared_ptr<donk::api::world::world_coretype> GetWorld() {
@@ -123,9 +120,9 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
 
   template <typename Derived>
   std::shared_ptr<Derived> Make(preset_t preset) {
-    if (preset.uuid() != 0) {
+    if (preset.entity_id() != 0) {
       throw std::runtime_error(
-          "cannot return iota from a preset with existing uuid");
+          "cannot return iota from a preset with existing entity_id");
     }
 
     auto iota = Make<Derived>(preset.path());

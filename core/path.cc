@@ -3,13 +3,15 @@
 // SPDX-License-Identifier: MIT
 #include "donk/core/path.h"
 
+#include <sstream>
+
 namespace donk {
 
 path_t::path_t(const std::string& name) : name_(name) {
   if (name_.empty()) {
     throw std::runtime_error("path_t input must never be empty");
   }
-  if (!absl::StartsWith(name_, "/")) {
+  if (name_.at(0) != '/') {
     throw std::runtime_error(fmt::format(
         "path_t input must always start with \"/\" (but was {})", name_));
   }
@@ -18,9 +20,7 @@ path_t::path_t(const std::string& name) : name_(name) {
 
 std::string path_t::fq() const { return name_; }
 
-bool path_t::HasRootType(std::string s) const {
-  return absl::StartsWith(name_, s);
-}
+bool path_t::HasRootType(std::string s) const { return name_.rfind(s, 0) == 0; }
 
 bool path_t::IsArea() const { return HasRootType("/datum/atom/area"); }
 bool path_t::IsTurf() const { return HasRootType("/datum/atom/turf"); }
@@ -69,31 +69,51 @@ path_t path_t::Parent() const {
   if (name_ == "/obj") {
     return path_t("/atom/movable");
   }
-  std::vector<std::string> parts =
-      absl::StrSplit(name_, "/", absl::SkipWhitespace());
-  parts.pop_back();
-  return "/" + absl::StrJoin(parts, "/");
+
+  std::string delimiter = "/";
+  std::vector<std::string> parts;
+  std::string s(name_);
+  // Shamelessly stolen from https://stackoverflow.com/questions/14265581
+  size_t pos = 0;
+  std::string token;
+  while ((pos = s.find(delimiter)) != std::string::npos) {
+    token = s.substr(0, pos);
+    parts.push_back(token);
+    s.erase(0, pos + delimiter.length());
+  }
+
+  std::ostringstream out;
+  if (parts.empty()) {
+    return path_t("/");
+  } else {
+    std::copy(parts.begin(), parts.end() - 1,
+              std::ostream_iterator<std::string>(out, "/"));
+    out << parts.back();
+    if (out.str() == "") {
+      return path_t("/");
+    }
+    return path_t(out.str());
+  }
 }
 
 path_t path_t::Child(std::string s) const {
-  absl::string_view input(s);
-  absl::ConsumePrefix(&input, "/");
-  absl::ConsumeSuffix(&input, "/");
-  return path_t(fmt::format("{}/{}", name_, input));
+  s.erase(0, s.find_first_not_of("/"));
+  s.erase(s.find_last_not_of("/") + 1);
+  return path_t(fmt::format("{}/{}", name_, s));
 }
 
 bool path_t::IsRoot() const { return name_ == "/"; }
 
 void path_t::FullyQualify(std::string& s) {
-  if (absl::StartsWith(s, "/area")) {
+  if (s.rfind("/area", 0) == 0) {
     s.insert(0, "/datum/atom");
-  } else if (absl::StartsWith(s, "/atom")) {
+  } else if (s.rfind("/atom", 0) == 0) {
     s.insert(0, "/datum");
-  } else if (absl::StartsWith(s, "/mob")) {
+  } else if (s.rfind("/mob", 0) == 0) {
     s.insert(0, "/datum/atom/movable");
-  } else if (absl::StartsWith(s, "/turf")) {
+  } else if (s.rfind("/turf", 0) == 0) {
     s.insert(0, "/datum/atom");
-  } else if (absl::StartsWith(s, "/obj")) {
+  } else if (s.rfind("/obj", 0) == 0) {
     s.insert(0, "/datum/atom/movable");
   }
 }
