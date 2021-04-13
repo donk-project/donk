@@ -447,7 +447,7 @@ donk::running_proc locate(donk::proc_ctxt_t& ctxt, donk::proc_args_t& args) {
   auto x = args.v(0)->get_int();
   auto y = args.v(1)->get_int();
   auto z = args.v(2)->get_int();
-  auto map_tile = ctxt.map()->index(x, y, z);
+  auto map_tile = ctxt.GetMapRoster()->index(x, y, z);
   if (map_tile == nullptr) {
     spdlog::critical("/locate has null map_tile at {} {} {}", x, y, z);
   }
@@ -455,7 +455,6 @@ donk::running_proc locate(donk::proc_ctxt_t& ctxt, donk::proc_args_t& args) {
   if (!turf) {
     spdlog::critical("/locate has null turf at {} {} {}", x, y, z);
   }
-  ctxt.Result(turf);
   co_return;
 }
 
@@ -618,7 +617,8 @@ donk::running_proc shell(donk::proc_ctxt_t& ctxt, donk::proc_args_t& args) {
 }
 
 donk::running_proc shutdown(donk::proc_ctxt_t& ctxt, donk::proc_args_t& args) {
-  co_yield ctxt.Unimplemented("/proc/shutdown");
+  ctxt.Shutdown();
+  co_return;
 }
 
 donk::running_proc sin(donk::proc_ctxt_t& ctxt, donk::proc_args_t& args) {

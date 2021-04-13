@@ -13,7 +13,7 @@
 #include "donk/core/path.h"
 #include "donk/interpreter/interpreter.h"
 #include "spdlog/spdlog.h"
-#include "tgcc/type_registrar.h"
+#include "type_registrar.h"
 
 // Runner is an executable which loads a Donk C++ library, attempts to find a
 // proc /main() in the object root, and executes it. This is meant to be a sort
@@ -27,10 +27,9 @@ class Runner {
   Runner() {
     auto collector = std::make_shared<std::map<
         donk::path_t, std::vector<std::function<void(donk::iota_t&)>>>>();
-    tgcc::RegisterAll(collector);
+    dtpo::RegisterAll(collector);
     (*collector)[donk::path_t("/")].push_back(donk::api::Register);
 
-    spdlog::info("Donk Runner.");
     interpreter_ = donk::internal::Interpreter::Create();
     interpreter_->SetRegistrationFunctions(collector);
     interpreter_->RegisterCoreprocs();

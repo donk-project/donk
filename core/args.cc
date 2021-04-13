@@ -33,11 +33,11 @@ proc_args_t::proc_args_t(std::initializer_list<var_t> l) {
 }
 
 // Convenience method for calls that support args (X,Y,Z)
-static std::shared_ptr<proc_args_t> coords(int x, int y, int z) {
+std::shared_ptr<proc_args_t> coords(int x, int y, int z) {
   auto coords = std::make_shared<proc_args_t>();
-  (*coords->v("x")) = x;
-  (*coords->v("y")) = y;
-  (*coords->v("z")) = z;
+  *coords->v("x") = x;
+  *coords->v("y") = y;
+  *coords->v("z") = z;
   spdlog::info("coords: {} {} {}", x, y, z);
   return coords;
 }

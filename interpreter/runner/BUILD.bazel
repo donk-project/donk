@@ -1,8 +1,8 @@
 # Donk Project
 # Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 # SPDX-License-Identifier: MIT
-load("@rules_cc//cc:defs.bzl", "cc_binary")
-load("//:defs.bzl", "WINDOWS_DEFAULT_COPTS", "DARWIN_DEFAULT_COPTS")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("//:defs.bzl", "DARWIN_DEFAULT_COPTS", "WINDOWS_DEFAULT_COPTS")
 
 cc_binary(
     name = "runner",
@@ -14,11 +14,12 @@ cc_binary(
         "//:windows": WINDOWS_DEFAULT_COPTS,
         "//:darwin": DARWIN_DEFAULT_COPTS,
     }),
+    visibility = ["//visibility:public"],
     deps = [
         "@donk//api",
         "@donk//core",
         "@donk//interpreter",
-        "@tgcc",
         "@spdlog",
+        "@dtpo",
     ],
 )

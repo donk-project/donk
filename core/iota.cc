@@ -51,4 +51,8 @@ void iota_t::Apply(preset_t preset) {
 
 void iota_t::InternalCoreRegister() {}
 
+void iota_t::ProcInput(std::string s, proc_input_t i) {
+  proc_table_.AddInput(s, i);
+}
+
 }  // namespace donk

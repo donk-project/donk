@@ -51,10 +51,6 @@ class iota_t {
 
   // `v` methods are variable retrievals.
   std::shared_ptr<var_t> v(const std::string& name);
-  std::shared_ptr<var_t> v(const std::string& name, var_t new_value) {
-    *v(name) = new_value;
-    return v(name);
-  }
 
   template <typename Kind>
   bool HasTypedVar(std::string name) const {
@@ -65,6 +61,7 @@ class iota_t {
 
   void RegisterProc(std::string, transpiled_proc);
   void ProcSettings(std::string, proc_settings_t);
+  void ProcInput(std::string, proc_input_t);
   void RegisterVar(const std::string&, var_t&);
   void RegisterVar(const std::string&);
   void Apply(preset_t preset);

@@ -120,21 +120,15 @@ std::shared_ptr<donk::mapping::MapRoster> Interpreter::map() {
   return map_roster_;
 }
 
-std::pair<path_t, std::vector<std::function<void(donk::iota_t&)>>>
-Interpreter::FindPrototype(path_t path) {
+std::vector<std::function<void(donk::iota_t&)>> Interpreter::FindPrototype(
+    path_t path) {
   for (auto const& result : *prototypes_) {
     if (result.first == path) {
-      return result;
+      return result.second;
     }
   }
-
-  std::vector<path_t> keys;
-  for (auto const& pair : *prototypes_) {
-    keys.push_back(pair.first);
-  }
-  throw std::runtime_error(
-      fmt::format("asked for unknown iota {}, valid iotas: {}", path,
-                  fmt::join(keys, ", ")));
+  std::vector<std::function<void(donk::iota_t&)>> empty;
+  return empty;
 }
 
 void Interpreter::UpdateUuidLinks(
@@ -173,6 +167,22 @@ void Interpreter::UpdateUuidLinks(
       }
     }
   }
+}
+
+running_proc_info& Interpreter::QueueSpawn(transpiled_proc spawn,
+                                           proc_args_t& args) {
+  return scheduler_->QueueSpawn(spawn, args);
+}
+
+running_proc_info& Interpreter::QueueProc(std::shared_ptr<iota_t> iota,
+                                          std::string name, proc_args_t& args) {
+  return scheduler_->QueueProc(iota, name, args);
+}
+
+running_proc_info& Interpreter::QueueChild(std::shared_ptr<iota_t> iota,
+                                           std::string name,
+                                           proc_args_t& args) {
+  return scheduler_->QueueChild(iota, name, args);
 }
 
 void Interpreter::ResetMaps() { ResetMapRoster(*map_roster_); }

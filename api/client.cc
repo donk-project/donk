@@ -116,7 +116,7 @@ donk::running_proc New(donk::proc_ctxt_t& ctxt, donk::proc_args_t& args) {
     *ctxt.src()->v("mob") = ctxt.make("/mob");
   }
 
-  ctxt.SProc(ctxt.src()->v("mob")->get_iota(), "New", {});
+  co_yield ctxt.ChildProc(ctxt.src()->v("mob")->get_iota(), "New", {});
 
   co_return;
 }

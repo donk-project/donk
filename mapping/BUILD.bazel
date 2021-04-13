@@ -2,7 +2,7 @@
 # Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 # SPDX-License-Identifier: MIT
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("//:defs.bzl", "WINDOWS_DEFAULT_COPTS", "DARWIN_DEFAULT_COPTS")
+load("//:defs.bzl", "DARWIN_DEFAULT_COPTS", "WINDOWS_DEFAULT_COPTS")
 
 cc_library(
     name = "mapping",

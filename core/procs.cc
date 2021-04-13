@@ -24,6 +24,12 @@ void proc_table_t::Register(std::string s, transpiled_proc func) {
   procs_[s].push_back(proc_t(func));
 }
 
-void proc_table_t::ApplySettings(std::string s, proc_settings_t settings) {}
+void proc_table_t::ApplySettings(std::string s, proc_settings_t settings) {
+  spdlog::warn("ApplySettings not implemented");
+}
+
+void proc_table_t::AddInput(std::string s, proc_input_t input) {
+  spdlog::warn("AddInput not implemented");
+}
 
 }  // namespace donk

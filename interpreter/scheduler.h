@@ -1,8 +1,8 @@
 // Donk Project
 // Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 // SPDX-License-Identifier: MIT
-#ifndef __DONK_INTERPRETER_SCHEDULER_H__
-#define __DONK_INTERPRETER_SCHEDULER_H__
+#ifndef __DONK_PROJECT_DONK_INTERPRETER_SCHEDULER_H__
+#define __DONK_PROJECT_DONK_INTERPRETER_SCHEDULER_H__
 
 #include <deque>
 #include <functional>
@@ -37,13 +37,13 @@
 // > - Rinse and repeat.
 
 namespace donk {
-// namespace internal {
 class Interpreter;
-// }
-namespace scheduler {
 
+namespace scheduler {
 class RunningTask {
  public:
+  RunningTask(transpiled_proc s, proc_args_t& a, running_proc_id id)
+      : name("DONKAPI_SPAWN_PROC"), args(a), spawn(s), proc_id(id) {}
   RunningTask(std::shared_ptr<iota_t> i, std::string n, proc_args_t a,
               running_proc_id id)
       : iota(i), name(n), args(a), proc_id(id) {}
@@ -54,12 +54,50 @@ class RunningTask {
   int sleep_ticks_requested;
   int current_tick;
   running_proc task;
+  transpiled_proc spawn;
   running_proc_id proc_id;
   std::shared_ptr<proc_ctxt_t> context;
-  std::vector<running_proc_id> waiting_tasks;
+  running_proc_info first_status_;
   // The last value yielded from this proc's coroutine.
   running_proc_info last_status_;
-  std::function<void()> callback_;
+  std::shared_ptr<var_t> subtask_result_;
+};
+
+class TaskStack {
+ public:
+  void Push(std::shared_ptr<RunningTask> rt) { stack_.push_front(rt); }
+
+  proc_callinstruct LastInstruction() {
+    return stack_.front()->last_status_.callinstruct;
+  }
+
+  bool IsSleepElapsed(unsigned long last_tick) {
+    return last_tick - stack_.front()->current_tick >=
+           stack_.front()->sleep_ticks_requested;
+  }
+
+  int size() const { return stack_.size(); }
+
+  bool empty() const { return size() == 0; }
+
+  std::shared_ptr<RunningTask> front() { return stack_.front(); }
+
+  std::shared_ptr<RunningTask> next() { return stack_.at(1); }
+
+  void pop_front() { stack_.pop_front(); }
+
+  std::deque<std::shared_ptr<RunningTask>>::iterator begin() {
+    return stack_.begin();
+  }
+
+  std::deque<std::shared_ptr<RunningTask>>::iterator end() {
+    return stack_.end();
+  }
+
+  std::string DEBUG__TopName() const { return stack_.front()->name; }
+
+ private:
+  std::deque<std::shared_ptr<RunningTask>> stack_;
 };
 
 class Scheduler {
@@ -67,134 +105,33 @@ class Scheduler {
   Scheduler(std::shared_ptr<donk::Interpreter> interpreter)
       : interpreter_(interpreter) {}
 
-  bool empty() const { return queued_tasks_.empty(); }
+  bool empty() const { return queued_tasks_.empty() && running_tasks_.empty(); }
 
-  running_proc_id QueueProc(std::shared_ptr<iota_t> iota, std::string name,
-                            proc_args_t args) {
-    last_id_++;
-    std::shared_ptr<RunningTask> rt =
-        std::make_shared<RunningTask>(iota, name, args, last_id_);
-    queued_tasks_.push_back(rt);
-    return last_id_;
-  }
+  running_proc_info& QueueProc(std::shared_ptr<iota_t> iota, std::string name,
+                               proc_args_t args);
+  running_proc_info& QueueChild(std::shared_ptr<iota_t> iota, std::string name,
+                                proc_args_t args);
+  running_proc_info& QueueSpawn(transpiled_proc spawn, proc_args_t& args);
+  cppcoro::task<> Work(unsigned long last_tick);
 
-  cppcoro::task<> Work(unsigned long last_tick) {
-    int len = running_tasks_.size();
-    if (len > 0) {
-      int i = 0;
-      while (i < len) {
-        auto rt = running_tasks_.front();
-        running_tasks_.pop_front();
-        if (rt->last_status_.callinstruct ==
-            proc_callinstruct::kSleepRequested) {
-          if (last_tick - rt->current_tick >= rt->sleep_ticks_requested) {
-            ProcessRunningTask(rt, last_tick);
-          } else {
-            running_tasks_.emplace_back(rt);
-          }
-        } else if (rt->last_status_.callinstruct ==
-                   proc_callinstruct::kAwaitingChild) {
-          if (rt->waiting_tasks.empty()) {
-            ProcessRunningTask(rt, last_tick);
-          } else {
-            running_tasks_.emplace_back(rt);
-          }
-        } else {
-          ProcessRunningTask(rt, last_tick);
-        }
-
-        i++;
-      }
-    }
-
-    if (queued_tasks_.empty()) {
-      co_return;
-    }
-
-    while (!queued_tasks_.empty()) {
-      // Check for un-running, queued tasks, and add them to the run queue.
-      auto rt = queued_tasks_.front();
-      queued_tasks_.pop_front();
-      auto proc = rt->iota->proc_table().GetProcByName(rt->name);
-      auto func = proc.GetInternalFunc();
-
-      // TODO: Fix assignment of src and usr
-      auto ctxt = std::make_shared<proc_ctxt_t>(interpreter_);
-      ctxt->AssignSrc(rt->iota);
-      ctxt->AssignUsr(rt->iota);
-
-      auto awaiter = func(*ctxt, rt->args);
-      rt->task = std::move(awaiter);
-      rt->context = ctxt;
-      rt->current_tick = last_tick;
-
-      ProcessRunningTask(rt, last_tick);
-    }
-  }
+  std::string DEBUG__OutputState() const;
 
  private:
-  std::shared_ptr<RunningTask> FindTask(running_proc_id id) {
-    for (int i = 0; i < running_tasks_.size(); i++) {
-      auto rt = running_tasks_[i];
-      if (rt->proc_id == id) {
-        return rt;
-      }
-    }
-    for (int i = 0; i < queued_tasks_.size(); i++) {
-      auto rt = queued_tasks_[i];
-      if (rt->proc_id == id) {
-        return rt;
-      }
-    }
-    return nullptr;
-  }
-
-  void ProcessRunningTask(std::shared_ptr<RunningTask> rt,
-                          unsigned long last_tick) {
-    for (auto result : rt->task) {
-      if (result.callinstruct == proc_callinstruct::kSleepRequested) {
-        rt->sleep_ticks_requested = result.requested_tick_delay;
-        rt->last_status_ = result;
-        rt->current_tick = last_tick;
-        running_tasks_.emplace_back(rt);
-        return;
-      } else if (result.callinstruct == proc_callinstruct::kAwaitingChild) {
-        // The calling proc rt has spun off a child proc, which we must now
-        // wait for before resuming.
-        rt->waiting_tasks.push_back(result.childproc);
-        rt->last_status_ = result;
-        running_tasks_.emplace_back(rt);
-
-        // Add a callback to the child task to remove itself from the parent's
-        // list of awaited tasks.
-        auto child_task = FindTask(result.childproc);
-        if (child_task != nullptr) {
-          child_task->callback_ = [=]() {
-            rt->context->ChildResult(child_task->context->result());
-            rt->waiting_tasks.erase(std::remove_if(
-                rt->waiting_tasks.begin(), rt->waiting_tasks.end(),
-                [=](running_proc_id r2) { return r2 == result.childproc; }));
-          };
-        } else {
-          spdlog::critical(
-              "Proc {} requested delay for child {} but it could not be found",
-              rt->name, result.childproc);
-        }
-        return;
-      }
-    }
-    if (rt->callback_ != nullptr) {
-      rt->callback_();
-    }
-  }
+  void ProcessRunningTask(std::shared_ptr<TaskStack> rt,
+                          unsigned long last_tick);
+  void PrepQueuedTask(std::shared_ptr<RunningTask> rt);
 
   std::shared_ptr<donk::Interpreter> interpreter_;
-  std::deque<std::shared_ptr<RunningTask>> running_tasks_;
+  std::deque<std::shared_ptr<TaskStack>> running_tasks_;
   std::deque<std::shared_ptr<RunningTask>> queued_tasks_;
   running_proc_id last_id_ = 1;
+  std::shared_ptr<RunningTask> running_task_;
+  running_proc_id running_id_;
+  std::shared_ptr<TaskStack> running_stack_;
+  unsigned long last_tick_;
 };
 
 }  // namespace scheduler
 }  // namespace donk
 
-#endif  // __DONK_INTERPRETER_SCHEDULER_H__
+#endif  // __DONK_PROJECT_DONK_INTERPRETER_SCHEDULER_H__

@@ -29,9 +29,11 @@ int main() {
 
   "children"_test = [] {
     donk::path_t p("/mob");
-    expect(p.Child("foo").fq() == "/datum/atom/movable/mob/foo")
-        << fmt::format("unexpected child {}", p.Child("foo").fq());
-    expect(p.Child("/foo/").fq() == "/datum/atom/movable/mob/foo")
-        << fmt::format("unexpected child {}", p.Child("/foo/").fq());
+    auto foo = p.Child("foo");
+    expect(foo.fq() == "/datum/atom/movable/mob/foo")
+        << fmt::format("unexpected child {}", foo.fq());
+    foo = p.Child("/foo/");
+    expect(foo.fq() == "/datum/atom/movable/mob/foo")
+        << fmt::format("unexpected child {}", foo.fq());
   };
 }

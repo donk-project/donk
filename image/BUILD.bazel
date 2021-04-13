@@ -2,28 +2,28 @@
 # Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 # SPDX-License-Identifier: MIT
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("//:defs.bzl", "WINDOWS_DEFAULT_COPTS", "DARWIN_DEFAULT_COPTS")
+load("//:defs.bzl", "DARWIN_DEFAULT_COPTS", "WINDOWS_DEFAULT_COPTS")
 
 cc_library(
     name = "image",
-    hdrs = [
-        "dmi_parser.h",
-        "dmi_reader.h",
-    ],
     srcs = [
         "dmi_parser.cc",
         "dmi_reader.cc",
     ],
-    deps = [
-        "@peglib",
-        "@fmtlib",
-        "@libpng",
-        "@spdlog",
+    hdrs = [
+        "dmi_parser.h",
+        "dmi_reader.h",
     ],
     copts = select({
         "//:windows": WINDOWS_DEFAULT_COPTS,
         "//:darwin": DARWIN_DEFAULT_COPTS,
     }),
-    visibility = ["//visibility:public"],
     include_prefix = "donk/image",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@fmtlib",
+        "@libpng",
+        "@peglib",
+        "@spdlog",
+    ],
 )

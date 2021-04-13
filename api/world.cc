@@ -111,13 +111,13 @@ donk::running_proc Topic(donk::proc_ctxt_t& ctxt, donk::proc_args_t& args) {
 
 donk::running_proc DONKAPI_Broadcast(donk::proc_ctxt_t& ctxt,
                                      donk::proc_args_t& args) {
-  spdlog::info("DONKAPI_Broadcast {}", args.v(0)->get_string());
+  spdlog::info("{}", args.v(0)->get_string());
   co_return;
 }
 
 donk::running_proc DONKAPI_BroadcastLog(donk::proc_ctxt_t& ctxt,
                                         donk::proc_args_t& args) {
-  spdlog::info("DONKAPI_Broadcast {}", args.v(0)->get_string());
+  spdlog::info("{}", args.v(0)->get_string());
   co_return;
 }
 

@@ -1,8 +1,8 @@
 // Donk Project
 // Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 // SPDX-License-Identifier: MIT
-#ifndef __SNOWFROST_DONK_CORE_VARS_H__
-#define __SNOWFROST_DONK_CORE_VARS_H__
+#ifndef __DONK_PROJECT_DONK_CORE_VARS_H__
+#define __DONK_PROJECT_DONK_CORE_VARS_H__
 
 #include <deque>
 #include <functional>
@@ -58,24 +58,19 @@ class var_t {
   // Un-templated getters for the internal variant type. These are used to keep
   // codegen complexity low.
 
-  int get_int();
-  float get_float();
-  std::string get_string();
-  entity_id get_entity_id();
-  path_t get_path();
-  prefab_t get_prefab();
+  int get_int() const;
+  float get_float() const;
+  std::string get_string() const;
+  entity_id get_entity_id() const;
+  path_t get_path() const;
+  prefab_t get_prefab() const;
   std::shared_ptr<resource_t> get_resource();
   std::shared_ptr<iota_t> get_iota();
   std::shared_ptr<assoc_list_t> get_list();
 
   template <typename Kind>
-  bool IsKind() {
+  bool IsKind() const {
     return std::holds_alternative<Kind>(data_);
-  }
-
-  static std::shared_ptr<var_t> str(std::string s) {
-    auto v = std::make_shared<var_t>(s);
-    return v;
   }
 
   // Convenience call-through for a var in an iota-filled var.
@@ -97,8 +92,41 @@ class var_t {
   var_t& operator+=(std::shared_ptr<var_t>);
   var_t& operator+=(path_t);
 
-  std::shared_ptr<var_t> operator-(std::shared_ptr<var_t>);
-  std::shared_ptr<var_t> operator*(std::shared_ptr<var_t>);
+  var_t operator+(const var_t& rhs) const;
+  var_t operator-(const var_t& rhs) const;
+  var_t operator*(const var_t& rhs) const;
+  var_t operator/(const var_t& rhs) const;
+
+  std::string DEBUG__TypeAsString() const {
+    if (IsKind<int>()) {
+      return "int";
+    }
+    if (IsKind<float>()) {
+      return "float";
+    }
+    if (IsKind<std::string>()) {
+      return "string";
+    }
+    if (IsKind<entity_id>()) {
+      return "entity_id";
+    }
+    if (IsKind<std::shared_ptr<iota_t>>()) {
+      return "iota";
+    }
+    if (IsKind<std::shared_ptr<resource_t>>()) {
+      return "resource";
+    }
+    if (IsKind<prefab_t>()) {
+      return "prefab";
+    }
+    if (IsKind<std::shared_ptr<assoc_list_t>>()) {
+      return "assoc_list";
+    }
+    if (IsKind<path_t>()) {
+      return "path";
+    }
+    return "unassigned";
+  }
 
   std::variant<int, float, std::string, entity_id, std::shared_ptr<iota_t>,
                std::shared_ptr<resource_t>, prefab_t,
@@ -233,4 +261,7 @@ struct fmt::formatter<::donk::var_t> {
 bool operator<(const std::shared_ptr<donk::var_t> v, const int i);
 bool operator<(const int i, const std::shared_ptr<donk::var_t> v);
 
-#endif  // __SNOWFROST_DONK_CORE_VARS_H__
+bool operator==(const donk::var_t v, const int i);
+bool operator==(const int i, const donk::var_t v);
+
+#endif  // __DONK_PROJECT_DONK_CORE_VARS_H__

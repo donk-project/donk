@@ -27,20 +27,6 @@ var_t::var_t(resource_t r) : data_(std::make_shared<resource_t>(r)) {}
 var_t::var_t(std::string s) : data_(s) {}
 var_t::var_t(assoc_list_t t) : data_(std::make_shared<assoc_list_t>(t)) {}
 
-std::shared_ptr<var_t> var_t::operator-(std::shared_ptr<var_t> v) {
-  if (this->IsKind<int>() && v->IsKind<int>()) {
-    return std::make_shared<var_t>(this->get_int() - v->get_int());
-  }
-  throw std::runtime_error("unsupported types for operator-");
-}
-
-std::shared_ptr<var_t> var_t::operator*(std::shared_ptr<var_t> v) {
-  if (this->IsKind<int>() && v->IsKind<int>()) {
-    return std::make_shared<var_t>(this->get_int() * v->get_int());
-  }
-  throw std::runtime_error("unsupported types for operator*");
-}
-
 // TODO: Clean up these unholy abominations
 std::shared_ptr<resource_t> var_t::get_resource() {
   try {
@@ -60,7 +46,7 @@ std::shared_ptr<iota_t> var_t::get_iota() {
   }
 }
 
-float var_t::get_float() {
+float var_t::get_float() const {
   try {
     return std::get<float>(data_);
   } catch (const std::bad_variant_access& e) {
@@ -69,7 +55,7 @@ float var_t::get_float() {
   }
 }
 
-std::string var_t::get_string() {
+std::string var_t::get_string() const {
   try {
     return std::get<std::string>(data_);
   } catch (const std::bad_variant_access& e) {
@@ -78,7 +64,7 @@ std::string var_t::get_string() {
   }
 }
 
-donk::entity_id var_t::get_entity_id() {
+donk::entity_id var_t::get_entity_id() const {
   try {
     return std::get<donk::entity_id>(data_);
   } catch (const std::bad_variant_access& e) {
@@ -87,7 +73,7 @@ donk::entity_id var_t::get_entity_id() {
   }
 }
 
-int var_t::get_int() {
+int var_t::get_int() const {
   try {
     return std::get<int>(data_);
   } catch (const std::bad_variant_access& e) {
@@ -96,7 +82,7 @@ int var_t::get_int() {
   }
 }
 
-donk::prefab_t var_t::get_prefab() {
+donk::prefab_t var_t::get_prefab() const {
   try {
     return std::get<donk::prefab_t>(data_);
   } catch (const std::bad_variant_access& e) {
@@ -105,7 +91,7 @@ donk::prefab_t var_t::get_prefab() {
   }
 }
 
-donk::path_t var_t::get_path() {
+donk::path_t var_t::get_path() const {
   try {
     return std::get<donk::path_t>(data_);
   } catch (const std::bad_variant_access& e) {
@@ -246,18 +232,67 @@ var_t& var_t::operator=(donk::prefab_t preset) {
   return *this;
 }
 
+var_t var_t::operator+(const var_t& rhs) const {
+  if (IsKind<int>() && rhs.IsKind<int>()) {
+    return get_int() + rhs.get_int();
+  }
+  throw std::runtime_error(
+      fmt::format("unsupported operator+ between {} and {}", *this, rhs));
+}
+
+var_t var_t::operator-(const var_t& rhs) const {
+  if (IsKind<int>() && rhs.IsKind<int>()) {
+    return get_int() - rhs.get_int();
+  }
+  throw std::runtime_error(
+      fmt::format("unsupported operator- between {} and {}", *this, rhs));
+}
+var_t var_t::operator*(const var_t& rhs) const {
+  if (IsKind<int>() && rhs.IsKind<int>()) {
+    return get_int() * rhs.get_int();
+  }
+  throw std::runtime_error(
+      fmt::format("unsupported operator* between {} and {}", *this, rhs));
+}
+
+var_t var_t::operator/(const var_t& rhs) const {
+  if (IsKind<int>() && rhs.IsKind<int>()) {
+    return get_int() / rhs.get_int();
+  }
+  throw std::runtime_error(
+      fmt::format("unsupported operator/ between {} and {}", *this, rhs));
+}
+
 }  // namespace donk
 
 bool operator<(const std::shared_ptr<donk::var_t> v, const int i) {
   if (v->IsKind<int>()) {
     return v->get_int() < i;
   }
-  throw std::runtime_error("incompatible comparison types");
+  throw std::runtime_error(
+      fmt::format("incompatible comparison types int and {}", *v));
 }
 
 bool operator<(const int i, const std::shared_ptr<donk::var_t> v) {
   if (v->IsKind<int>()) {
     return i < v->get_int();
   }
-  throw std::runtime_error("incompatible comparison types");
+  throw std::runtime_error(
+      fmt::format("incompatible comparison types int and {}", *v));
+}
+
+bool operator==(const donk::var_t v, const int i) {
+  if (v.IsKind<int>()) {
+    return v.get_int() == i;
+  }
+  throw std::runtime_error(
+      fmt::format("incompatible comparison types int and {}", v));
+}
+
+bool operator==(const int i, const donk::var_t v) {
+  if (v.IsKind<int>()) {
+    return v.get_int() == i;
+  }
+  throw std::runtime_error(
+      fmt::format("incompatible comparison types int and {}", v));
 }

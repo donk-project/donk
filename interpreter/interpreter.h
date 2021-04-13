@@ -106,10 +106,10 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
   // in order to properly construct a new object.
   template <typename Derived>
   std::shared_ptr<Derived> Make(path_t path) {
-    auto iota = Prototype<Derived>(path);
+    auto iota = std::make_shared<Derived>(path);
     while (!path.IsRoot()) {
-      auto pair = FindPrototype(path);
-      for (auto register_func : pair.second) {
+      auto prototypes = FindPrototype(path);
+      for (auto register_func : prototypes) {
         register_func(*iota);
       }
       path = path.Parent();
@@ -133,56 +133,31 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
 
   void ExitOnEmptyQueue() { exit_on_empty_queue_ = true; }
 
-  running_proc_id QueueProc(std::shared_ptr<iota_t> iota, std::string name,
-                            proc_args_t& args) override {
-    return scheduler_->QueueProc(iota, name, args);
-  }
-
-  running_proc_id QueueProc(std::shared_ptr<iota_t> iota,
-                            std::string name) override {
-    proc_args_t args;
-    return scheduler_->QueueProc(iota, name, args);
-  }
-
-  running_proc_id QueueProc(std::shared_ptr<iota_t> iota, std::string name,
-                            std::string arg) override {
-    proc_args_t args(arg);
-    return scheduler_->QueueProc(iota, name, args);
-  }
-
-  std::shared_ptr<var_t> RunProcNow(std::shared_ptr<iota_t> iota,
-                                    std::string name,
-                                    proc_args_t& args) override {
-    // TODO: Fix assignment of src and usr
-    auto ctxt = std::make_shared<proc_ctxt_t>(shared_from_this());
-    ctxt->AssignSrc(iota);
-    ctxt->AssignUsr(iota);
-
-    auto proc = iota->proc_table().GetProcByName(name);
-    auto func = proc.GetInternalFunc();
-    auto generator = func(*ctxt, args);
-    for (auto t : generator) {
-    }
-    return ctxt->result();
-  }
+  running_proc_info& QueueChild(std::shared_ptr<iota_t> iota, std::string name,
+                                proc_args_t& args) override;
+  running_proc_info& QueueProc(std::shared_ptr<iota_t> iota, std::string name,
+                               proc_args_t& args) override;
+  running_proc_info& QueueSpawn(transpiled_proc spawn,
+                                proc_args_t& args) override;
 
   void Run() {
-    spdlog::info("Interpreter active.");
+    spdlog::info("Donk Interpreter active.");
     active_ = true;
     time_keeper_->Start();
   }
 
-  void Stop() { active_ = false; }
+  void Stop() override { active_ = false; }
 
-  bool Active() { return active_; }
+  bool Active() override { return active_; }
 
   void Tick() {
     if (time_keeper_->Advanced()) {
       auto t = time_keeper_->Tick();
       cppcoro::sync_wait(scheduler_->Work(t));
+      // spdlog::info(scheduler_->DEBUG__OutputState());
     }
     if (scheduler_->empty() && exit_on_empty_queue_) {
-      spdlog::info("Exit requested on empty queue.");
+      spdlog::info("Stopping on empty scheduler.");
       Stop();
     }
   }
@@ -193,22 +168,7 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
   Interpreter();
 
   // Returns the list of registration functions associated with a given path.
-  std::pair<path_t, std::vector<std::function<void(donk::iota_t&)>>>
-  FindPrototype(path_t path);
-
-  template <typename Derived>
-  std::shared_ptr<Derived> Prototype(path_t path) {
-    bool found = false;
-    for (auto& result : *prototypes_) {
-      if (result.first == path) {
-        found = true;
-      }
-    }
-    if (!found) {
-      throw std::runtime_error(fmt::format("no known prototype {}", path));
-    }
-    return std::make_shared<Derived>(path);
-  }
+  std::vector<std::function<void(donk::iota_t&)>> FindPrototype(path_t path);
 
   std::shared_ptr<donk::iota_t> global_scope_;
   std::shared_ptr<

@@ -19,62 +19,47 @@ std::shared_ptr<iota_t> proc_ctxt_t::world() { return interpreter_->world(); }
 
 std::shared_ptr<var_t> proc_ctxt_t::result() { return result_; }
 
+void proc_ctxt_t::del(std::shared_ptr<iota_t> d) {}
+
 std::shared_ptr<iota_t> proc_ctxt_t::make(std::string str) {
   return interpreter_->MakeArbitrary(str);
 }
 
-void proc_ctxt_t::AssignSrc(std::shared_ptr<iota_t> i) { src_ = i; }
-
-void proc_ctxt_t::AssignUsr(std::shared_ptr<iota_t> i) { usr_ = i; }
-
-void proc_ctxt_t::Result(std::shared_ptr<var_t> v) { result_ = v; }
-
-void proc_ctxt_t::Result(int i) { result_ = std::make_shared<var_t>(i); }
-
-void proc_ctxt_t::Result(std::shared_ptr<iota_t> i) { result_->data_ = i; }
-
-std::shared_ptr<var_t> proc_ctxt_t::cvar(std::string s) {
-  return interpreter_->Corevar(s);
+std::shared_ptr<var_t> proc_ctxt_t::Gproc(std::string proc_name,
+                                          proc_args_t args) {
+  auto ctxt = std::make_shared<proc_ctxt_t>(interpreter_);
+  auto proc = Global()->proc_table().GetProcByName(proc_name);
+  auto func = proc.GetInternalFunc();
+  auto generator = func(*ctxt, args);
+  for (auto t : generator) {
+    // If a proc called here requests a sleep or spawn it will be ignored
+    // because only the scheduler responds to these instructions, and Gproc
+    // skips the scheduler altogether.
+    if (t.callinstruct == proc_callinstruct::kSleepRequested) {
+      spdlog::critical("Gproc {} called sleep, which is ignored", proc_name);
+    } else if (t.callinstruct == proc_callinstruct::kAwaitingChild) {
+      spdlog::critical("Gproc {} awaiting child, which is ignored", proc_name);
+    }
+  }
+  return ctxt->result();
 }
 
-std::shared_ptr<donk::mapping::MapRoster> proc_ctxt_t::map() {
-  return interpreter_->map();
+running_proc_info& proc_ctxt_t::Spawn(transpiled_proc spawn, proc_args_t& args,
+                                      int tick_delay) {
+  return interpreter_->QueueSpawn(spawn, args);
 }
 
-std::shared_ptr<donk::ecs::EcsManager> proc_ctxt_t::ecs() {
-  return interpreter_->EcsManager();
+running_proc_info& proc_ctxt_t::ChildProc(std::shared_ptr<iota_t> iota,
+                                          std::string proc_name,
+                                          proc_args_t args) {
+  return interpreter_->QueueChild(iota, proc_name, args);
 }
 
-running_proc_info proc_ctxt_t::sleep(int ticks) {
+running_proc_info proc_ctxt_t::Sleep(int ticks) {
   running_proc_info info;
   info.callinstruct = proc_callinstruct::kSleepRequested;
   info.requested_tick_delay = ticks;
   return info;
-}
-
-running_proc_info proc_ctxt_t::Proc(std::shared_ptr<iota_t> iota,
-                                    std::string proc_name, proc_args_t args) {
-  auto pid = interpreter_->QueueProc(iota, proc_name, args);
-  running_proc_info info;
-  info.proc = pid;
-  info.callinstruct = proc_callinstruct::kNew;
-  return info;
-}
-
-running_proc_info proc_ctxt_t::ChildProc(std::shared_ptr<iota_t> iota,
-                                         std::string proc_name,
-                                         proc_args_t args) {
-  auto pid = interpreter_->QueueProc(iota, proc_name, args);
-  running_proc_info info;
-  info.callinstruct = proc_callinstruct::kAwaitingChild;
-  info.childproc = pid;
-  return info;
-}
-
-std::shared_ptr<var_t> proc_ctxt_t::SProc(std::shared_ptr<iota_t> iota,
-                                          std::string proc_name,
-                                          proc_args_t args) {
-  return interpreter_->RunProcNow(iota, proc_name, args);
 }
 
 running_proc_info proc_ctxt_t::Unimplemented(std::string proc_name) {
@@ -84,13 +69,37 @@ running_proc_info proc_ctxt_t::Unimplemented(std::string proc_name) {
   return info;
 }
 
+std::shared_ptr<var_t> proc_ctxt_t::Gvar(std::string s) {
+  return interpreter_->Corevar(s);
+}
+
 void proc_ctxt_t::Broadcast(std::shared_ptr<var_t> receiver_list,
                             std::shared_ptr<var_t> obj) {}
 
-running_proc_info proc_ctxt_t::Spawn(transpiled_proc spawn) {
-  return Unimplemented("spawned proc");
+std::shared_ptr<iota_t> proc_ctxt_t::Global() { return interpreter_->Global(); }
+
+void proc_ctxt_t::Shutdown() { interpreter_->Stop(); }
+
+std::shared_ptr<var_t> proc_ctxt_t::GetResult() { return result_; }
+
+std::shared_ptr<donk::ecs::EcsManager> proc_ctxt_t::GetEcsManager() {
+  return interpreter_->EcsManager();
 }
 
-std::shared_ptr<iota_t> proc_ctxt_t::Global() { return interpreter_->Global(); }
+std::shared_ptr<donk::mapping::MapRoster> proc_ctxt_t::GetMapRoster() {
+  return interpreter_->map();
+}
+
+void proc_ctxt_t::SetSrc(std::shared_ptr<iota_t> i) { src_ = i; }
+
+void proc_ctxt_t::SetUsr(std::shared_ptr<iota_t> i) { usr_ = i; }
+
+void proc_ctxt_t::SetResult(std::shared_ptr<var_t> v) { result_ = v; }
+
+void proc_ctxt_t::SetResult(int i) { result_ = std::make_shared<var_t>(i); }
+
+void proc_ctxt_t::SetResult(std::shared_ptr<iota_t> i) { result_->data_ = i; }
+
+void proc_ctxt_t::SetResult(var_t v) { *result_ = v; };
 
 }  // namespace donk

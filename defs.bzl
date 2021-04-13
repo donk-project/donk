@@ -19,3 +19,17 @@ DARWIN_DEFAULT_COPTS = [
     "-fcoroutines-ts",
     "-std=c++2a",
 ]
+
+DARWIN_TEST_COVERAGE_COPTS = [
+    "-fprofile-arcs",
+    "-ftest-coverage",
+    "-fprofile-instr-generate", 
+    "-fcoverage-mapping",
+    "-ftest-coverage",
+]
+
+DARWIN_TEST_COVERAGE_LINKOPTS = [
+    "-fprofile-arcs",
+    "-ftest-coverage",
+    "-fprofile-instr-generate",
+]
