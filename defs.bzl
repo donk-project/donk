@@ -16,6 +16,7 @@ DARWIN_DEFAULT_COPTS = [
     "-Wshadow",
     "-Wundef",
     "-Wwrite-strings",
+    "-Wno-unused-parameter",
     "-fcoroutines-ts",
     "-std=c++2a",
 ]

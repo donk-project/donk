@@ -1,8 +1,8 @@
 // Donk Project
 // Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 // SPDX-License-Identifier: MIT
-#ifndef __DONK_CORE_INTERPRETER_H__
-#define __DONK_CORE_INTERPRETER_H__
+#ifndef __DONK_PROJECT_DONK_CORE_INTERPRETER_H__
+#define __DONK_PROJECT_DONK_CORE_INTERPRETER_H__
 
 #include <string>
 
@@ -41,6 +41,9 @@ class Interpreter {
   virtual running_proc_info& QueueChild(std::shared_ptr<iota_t> iota,
                                         std::string name,
                                         proc_args_t& args) = 0;
+  virtual running_proc_info& QueueChild(std::shared_ptr<iota_t> iota,
+                                        transpiled_proc proc, std::string name,
+                                        proc_args_t& args) = 0;
 
   virtual void RegisterCoreprocs() = 0;
   virtual void CreateWorld() = 0;
@@ -58,4 +61,4 @@ class Interpreter {
 
 }  // namespace donk
 
-#endif  // __DONK_CORE_INTERPRETER_H__
+#endif  // __DONK_PROJECT_DONK_CORE_INTERPRETER_H__

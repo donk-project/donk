@@ -4,7 +4,7 @@
 #include "runner.h"
 
 int main(int argc, char* argv[]) {
-  donk::runner::Runner runner;
+  donk::runner::Runner runner(argv[0]);
   runner.CallMain();
   return 0;
 }

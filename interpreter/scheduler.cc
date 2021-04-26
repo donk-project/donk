@@ -28,11 +28,11 @@ std::string Scheduler::DEBUG__OutputState() const {
   for (auto task_stack : running_tasks_) {
     output.push_back("Stack");
     for (auto rt : *task_stack) {
-      output.push_back(fmt::format(" {} {}", rt->proc_id, rt->name));
+      output.push_back(fmt::format(" {} {}", rt->proc_id(), rt->name()));
     }
   }
   for (auto rt : queued_tasks_) {
-    output.push_back(fmt::format("${} {}", rt->proc_id, rt->name));
+    output.push_back(fmt::format("${} {}", rt->proc_id(), rt->name()));
   }
 
   return fmt::format("{}", fmt::join(output, "\n"));
@@ -43,12 +43,10 @@ running_proc_info& Scheduler::QueueProc(std::shared_ptr<iota_t> iota,
   last_id_++;
   running_proc_info info;
   info.callinstruct = proc_callinstruct::kNew;
-  std::shared_ptr<RunningTask> rt =
-      std::make_shared<RunningTask>(iota, name, args, last_id_);
-  rt->first_status_ = info;
+  auto rt = RunningTask::ObjCall(iota, name, args, last_id_);
+  rt->set_first_status(info);
   queued_tasks_.push_back(rt);
-  // spdlog::info("Queueing task {}", name);
-  return rt->first_status_;
+  return rt->first_status();
 }
 
 running_proc_info& Scheduler::QueueChild(std::shared_ptr<iota_t> iota,
@@ -57,13 +55,25 @@ running_proc_info& Scheduler::QueueChild(std::shared_ptr<iota_t> iota,
   running_proc_info info;
   info.callinstruct = proc_callinstruct::kAwaitingChild;
   info.parent_task = running_task_;
-  std::shared_ptr<RunningTask> rt =
-      std::make_shared<RunningTask>(iota, name, args, last_id_);
-  rt->first_status_ = info;
+  auto rt = RunningTask::ObjCall(iota, name, args, last_id_);
+  rt->set_first_status(info);
   PrepQueuedTask(rt);
   running_stack_->Push(rt);
-  // spdlog::info("Queueing child task {}", name);
-  return rt->first_status_;
+  return rt->first_status();
+}
+
+running_proc_info& Scheduler::QueueChild(std::shared_ptr<iota_t> iota,
+                                         transpiled_proc proc, std::string name,
+                                         proc_args_t args) {
+  last_id_++;
+  running_proc_info info;
+  info.callinstruct = proc_callinstruct::kAwaitingChild;
+  info.parent_task = running_task_;
+  auto rt = RunningTask::Direct(iota, proc, name, args, last_id_);
+  rt->set_first_status(info);
+  PrepQueuedTask(rt);
+  running_stack_->Push(rt);
+  return rt->first_status();
 }
 
 running_proc_info& Scheduler::QueueSpawn(transpiled_proc spawn,
@@ -71,12 +81,10 @@ running_proc_info& Scheduler::QueueSpawn(transpiled_proc spawn,
   last_id_++;
   running_proc_info info;
   info.callinstruct = proc_callinstruct::kSpawn;
-  std::shared_ptr<RunningTask> rt =
-      std::make_shared<RunningTask>(spawn, args, last_id_);
-  rt->first_status_ = info;
+  auto rt = RunningTask::Spawn(spawn, args, last_id_);
+  rt->set_first_status(info);
   queued_tasks_.push_back(rt);
-  // spdlog::info("Queueing spawn task.");
-  return rt->first_status_;
+  return rt->first_status();
 }
 
 cppcoro::task<> Scheduler::Work(unsigned long last_tick) {
@@ -92,6 +100,14 @@ cppcoro::task<> Scheduler::Work(unsigned long last_tick) {
     while (i < len) {
       auto ts = running_tasks_.front();
       running_tasks_.pop_front();
+
+      // TODO: Kind of sloppy that the completed tasks have to be cleaned up
+      // here
+      if (ts->empty()) {
+        i++;
+        continue;
+      }
+
       if (ts->LastInstruction() == proc_callinstruct::kSleepRequested) {
         if (ts->IsSleepElapsed(last_tick)) {
           ProcessRunningTask(ts, last_tick);
@@ -126,25 +142,26 @@ cppcoro::task<> Scheduler::Work(unsigned long last_tick) {
 }
 
 void Scheduler::PrepQueuedTask(std::shared_ptr<RunningTask> rt) {
-  if (rt->name == "DONKAPI_SPAWN_PROC") {
+  if (rt->is_spawn()) {
     auto ctxt = std::make_shared<proc_ctxt_t>(interpreter_);
-    rt->context = ctxt;
-    rt->current_tick = last_tick_;
-    auto awaiter = rt->spawn(*ctxt, rt->args);
-    rt->task = std::move(awaiter);
+    rt->set_context(ctxt);
+    rt->set_current_tick(last_tick_);
+    rt->Await();
   } else {
-    auto proc = rt->iota->proc_table().GetProcByName(rt->name);
-    auto func = proc.GetInternalFunc();
+    if (!rt->HasCallable()) {
+      auto func = rt->src()->proc_table().GetProcByName(rt->name());
+      auto proc = func.GetInternalProc();
+      rt->set_proc(proc);
+    }
 
     // TODO: Fix assignment of src and usr
     auto ctxt = std::make_shared<proc_ctxt_t>(interpreter_);
-    ctxt->SetSrc(rt->iota);
-    ctxt->SetUsr(rt->iota);
+    ctxt->SetSrc(rt->src());
+    ctxt->SetUsr(rt->src());
 
-    rt->context = ctxt;
-    rt->current_tick = last_tick_;
-    auto awaiter = func(*ctxt, rt->args);
-    rt->task = std::move(awaiter);
+    rt->set_context(ctxt);
+    rt->set_current_tick(last_tick_);
+    rt->Await();
   }
 }
 
@@ -153,24 +170,30 @@ void Scheduler::ProcessRunningTask(std::shared_ptr<TaskStack> ts,
   running_stack_ = ts;
   auto rt = running_stack_->front();
   running_task_ = rt;
-  // spdlog::info("ProcessRunningTask({})", rt->name);
-  for (auto result : rt->task) {
-    rt->last_status_ = result;
+  // spdlog::info("ProcessRunningTask({}), stack size={}", rt->name(),
+  // ts->size());
+  for (auto result : rt->task()) {
+    rt->set_last_status(result);
     if (result.callinstruct == proc_callinstruct::kSleepRequested) {
-      rt->sleep_ticks_requested = result.requested_tick_delay;
-      rt->current_tick = last_tick;
+      rt->set_sleep_ticks_requested(result.requested_tick_delay);
+      rt->set_current_tick(last_tick);
       return;
     } else if (result.callinstruct == proc_callinstruct::kAwaitingChild) {
-      // The calling proc rt has spun off a child proc, which we must now
-      // wait for before resuming.
+      ProcessRunningTask(ts, last_tick);
       return;
     }
   }
 
-  if (rt->context->GetResult() != nullptr) {
-    if (rt->first_status_.parent_task != nullptr) {
-      rt->first_status_.parent_task->subtask_result_ = rt->context->GetResult();
+  if (rt->first_status().parent_task != nullptr) {
+    // Hand the return value back to the parent task.
+    if (rt->context()->GetResult() != nullptr) {
+      rt->first_status().parent_task->set_subtask_result(
+          rt->context()->GetResult());
     }
+    ts->pop_front();
+    // Ending a child task isn't a stopping point for the scheduler.
+    ProcessRunningTask(ts, last_tick);
+    return;
   }
 
   ts->pop_front();

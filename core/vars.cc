@@ -197,6 +197,32 @@ var_t& var_t::operator+=(path_t p) {
   return *this;
 }
 
+var_t& var_t::operator+=(int i) {
+  if (IsKind<int>()) {
+    std::get<int>(data_) += i;
+    return *this;
+  }
+  if (IsKind<float>()) {
+    std::get<float>(data_) += i;
+    return *this;
+  }
+
+  throw std::runtime_error(fmt::format("unsupported operator+= {}", i));
+}
+
+var_t& var_t::operator-=(int i) {
+  if (IsKind<int>()) {
+    std::get<int>(data_) -= i;
+    return *this;
+  }
+  if (IsKind<float>()) {
+    std::get<float>(data_) -= i;
+    return *this;
+  }
+
+  throw std::runtime_error(fmt::format("unsupported operator-= {}", i));
+}
+
 var_t& var_t::operator=(int i) {
   data_.emplace<int>(i);
   return *this;
@@ -261,6 +287,13 @@ var_t var_t::operator/(const var_t& rhs) const {
   }
   throw std::runtime_error(
       fmt::format("unsupported operator/ between {} and {}", *this, rhs));
+}
+
+void var_table_t::DEBUG__PrintVarTable() {
+  spdlog::info("var_table");
+  for (const auto& [name, var] : *vars_) {
+    spdlog::info("{} | {}", name, *var);
+  }
 }
 
 }  // namespace donk

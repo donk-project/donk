@@ -97,6 +97,12 @@ class proc_ctxt_t {
   running_proc_info& ChildProc(std::shared_ptr<iota_t> iota,
                                std::string proc_name, proc_args_t args);
 
+  // DirectProc allows a proc to be run against an arbitrary iota.
+  // Typically used for parent calls.
+  running_proc_info& DirectProc(std::shared_ptr<iota_t> iota,
+                                transpiled_proc proc, std::string name,
+                                proc_args_t args);
+
   // Sleep tells the interpreter to sleep the proc for the provided number
   // of ticks.
   running_proc_info Sleep(int ticks);

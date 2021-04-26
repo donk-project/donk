@@ -3,7 +3,11 @@
 // SPDX-License-Identifier: MIT
 #include "donk/mapping/tgm_parser.h"
 
+#include <string>
+#include <vector>
+
 #include "donk/core/preset.h"
+#include "donk/mapping/tgm_parser.h"
 
 namespace donk {
 namespace mapping {

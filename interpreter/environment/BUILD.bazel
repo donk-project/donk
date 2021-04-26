@@ -1,0 +1,61 @@
+# Donk Project
+# Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
+# SPDX-License-Identifier: MIT
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//:defs.bzl", "DARWIN_DEFAULT_COPTS", "WINDOWS_DEFAULT_COPTS")
+
+cc_library(
+    name = "environment",
+    hdrs = ["environment.h"],
+    copts = select({
+        "//:windows": WINDOWS_DEFAULT_COPTS,
+        "//:darwin": DARWIN_DEFAULT_COPTS,
+    }),
+    include_prefix = "donk/interpreter/environment",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@donk//core",
+        "@donk//image",
+        "@donk//mapping",
+    ],
+)
+
+cc_library(
+    name = "filesystem",
+    srcs = ["filesystem_environment.cc"],
+    hdrs = ["filesystem_environment.h"],
+    copts = select({
+        "//:windows": WINDOWS_DEFAULT_COPTS,
+        "//:darwin": DARWIN_DEFAULT_COPTS,
+    }),
+    include_prefix = "donk/interpreter/environment",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":environment",
+        "@donk//core",
+        "@donk//image",
+        "@donk//mapping",
+        "@spdlog",
+    ],
+)
+
+cc_library(
+    name = "runfiles",
+    srcs = ["runfiles_environment.cc"],
+    hdrs = ["runfiles_environment.h"],
+    copts = select({
+        "//:windows": WINDOWS_DEFAULT_COPTS,
+        "//:darwin": DARWIN_DEFAULT_COPTS,
+    }),
+    include_prefix = "donk/interpreter/environment",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":environment",
+        ":filesystem",
+        "@bazel_tools//tools/cpp/runfiles",
+        "@donk//core",
+        "@donk//image",
+        "@donk//mapping",
+        "@spdlog",
+    ],
+)

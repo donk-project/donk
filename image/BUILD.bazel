@@ -13,6 +13,7 @@ cc_library(
     hdrs = [
         "dmi_parser.h",
         "dmi_reader.h",
+        "import_icon_file.h",
     ],
     copts = select({
         "//:windows": WINDOWS_DEFAULT_COPTS,

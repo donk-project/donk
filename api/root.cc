@@ -9,7 +9,9 @@
 
 #include "donk/core/iota.h"
 #include "donk/core/procs.h"
+#include "donk/mapping/map_roster.h"
 #include "donk/mapping/map_view.h"
+#include "donk/mapping/tgm_parser.h"
 #include "spdlog/spdlog.h"
 
 namespace donk::api {

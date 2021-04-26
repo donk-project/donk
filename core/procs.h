@@ -216,7 +216,7 @@ class proc_t {
  public:
   proc_t(transpiled_proc func) : func_(func) {}
 
-  transpiled_proc GetInternalFunc() { return func_; }
+  transpiled_proc GetInternalProc() { return func_; }
 
  private:
   void Call(proc_ctxt_t&, proc_args_t&);

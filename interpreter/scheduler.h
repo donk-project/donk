@@ -12,6 +12,8 @@
 #include "cppcoro/task.hpp"
 #include "donk/core/iota.h"
 #include "donk/core/procs.h"
+#include "donk/interpreter/running_task.h"
+#include "donk/interpreter/task_stack.h"
 
 // BYOND uses a task scheduler to permit blocking and non-blocking operations to
 // share a single-threaded event loop.
@@ -40,66 +42,6 @@ namespace donk {
 class Interpreter;
 
 namespace scheduler {
-class RunningTask {
- public:
-  RunningTask(transpiled_proc s, proc_args_t& a, running_proc_id id)
-      : name("DONKAPI_SPAWN_PROC"), args(a), spawn(s), proc_id(id) {}
-  RunningTask(std::shared_ptr<iota_t> i, std::string n, proc_args_t a,
-              running_proc_id id)
-      : iota(i), name(n), args(a), proc_id(id) {}
-
-  std::shared_ptr<iota_t> iota;
-  std::string name;
-  proc_args_t args;
-  int sleep_ticks_requested;
-  int current_tick;
-  running_proc task;
-  transpiled_proc spawn;
-  running_proc_id proc_id;
-  std::shared_ptr<proc_ctxt_t> context;
-  running_proc_info first_status_;
-  // The last value yielded from this proc's coroutine.
-  running_proc_info last_status_;
-  std::shared_ptr<var_t> subtask_result_;
-};
-
-class TaskStack {
- public:
-  void Push(std::shared_ptr<RunningTask> rt) { stack_.push_front(rt); }
-
-  proc_callinstruct LastInstruction() {
-    return stack_.front()->last_status_.callinstruct;
-  }
-
-  bool IsSleepElapsed(unsigned long last_tick) {
-    return last_tick - stack_.front()->current_tick >=
-           stack_.front()->sleep_ticks_requested;
-  }
-
-  int size() const { return stack_.size(); }
-
-  bool empty() const { return size() == 0; }
-
-  std::shared_ptr<RunningTask> front() { return stack_.front(); }
-
-  std::shared_ptr<RunningTask> next() { return stack_.at(1); }
-
-  void pop_front() { stack_.pop_front(); }
-
-  std::deque<std::shared_ptr<RunningTask>>::iterator begin() {
-    return stack_.begin();
-  }
-
-  std::deque<std::shared_ptr<RunningTask>>::iterator end() {
-    return stack_.end();
-  }
-
-  std::string DEBUG__TopName() const { return stack_.front()->name; }
-
- private:
-  std::deque<std::shared_ptr<RunningTask>> stack_;
-};
-
 class Scheduler {
  public:
   Scheduler(std::shared_ptr<donk::Interpreter> interpreter)
@@ -110,6 +52,9 @@ class Scheduler {
   running_proc_info& QueueProc(std::shared_ptr<iota_t> iota, std::string name,
                                proc_args_t args);
   running_proc_info& QueueChild(std::shared_ptr<iota_t> iota, std::string name,
+                                proc_args_t args);
+  running_proc_info& QueueChild(std::shared_ptr<iota_t> iota,
+                                transpiled_proc proc, std::string name,
                                 proc_args_t args);
   running_proc_info& QueueSpawn(transpiled_proc spawn, proc_args_t& args);
   cppcoro::task<> Work(unsigned long last_tick);
@@ -128,7 +73,7 @@ class Scheduler {
   std::shared_ptr<RunningTask> running_task_;
   running_proc_id running_id_;
   std::shared_ptr<TaskStack> running_stack_;
-  unsigned long last_tick_;
+  unsigned long last_tick_ = 0;
 };
 
 }  // namespace scheduler

@@ -29,7 +29,7 @@ std::shared_ptr<var_t> proc_ctxt_t::Gproc(std::string proc_name,
                                           proc_args_t args) {
   auto ctxt = std::make_shared<proc_ctxt_t>(interpreter_);
   auto proc = Global()->proc_table().GetProcByName(proc_name);
-  auto func = proc.GetInternalFunc();
+  auto func = proc.GetInternalProc();
   auto generator = func(*ctxt, args);
   for (auto t : generator) {
     // If a proc called here requests a sleep or spawn it will be ignored
@@ -53,6 +53,13 @@ running_proc_info& proc_ctxt_t::ChildProc(std::shared_ptr<iota_t> iota,
                                           std::string proc_name,
                                           proc_args_t args) {
   return interpreter_->QueueChild(iota, proc_name, args);
+}
+
+running_proc_info& proc_ctxt_t::DirectProc(std::shared_ptr<iota_t> iota,
+                                           transpiled_proc proc,
+                                           std::string proc_name,
+                                           proc_args_t args) {
+  return interpreter_->QueueChild(iota, proc, proc_name, args);
 }
 
 running_proc_info proc_ctxt_t::Sleep(int ticks) {

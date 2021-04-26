@@ -32,8 +32,8 @@
 #include "donk/core/iota.h"
 #include "donk/core/procs.h"
 #include "donk/core/vars.h"
-#include "donk/interpreter/importer.h"
 #include "donk/interpreter/timekeeper.h"
+#include "donk/mapping/map_roster.h"
 #include "donk/mapping/map_view.h"
 #include "entt/entity/fwd.hpp"
 #include "entt/entity/storage.hpp"
@@ -47,6 +47,7 @@ namespace internal {
 Interpreter::Interpreter() : donk::Interpreter() {
   ecs_manager_ = std::make_shared<donk::ecs::EcsManager>();
   time_keeper_ = std::make_shared<donk::scheduler::TimeKeeper>();
+  map_roster_ = std::make_shared<donk::mapping::MapRoster>();
 }
 
 std::shared_ptr<iota_t> Interpreter::MakeArbitrary(std::string str) {
@@ -185,6 +186,12 @@ running_proc_info& Interpreter::QueueChild(std::shared_ptr<iota_t> iota,
   return scheduler_->QueueChild(iota, name, args);
 }
 
+running_proc_info& Interpreter::QueueChild(std::shared_ptr<iota_t> iota,
+                                           transpiled_proc proc,
+                                           std::string name,
+                                           proc_args_t& args) {
+  return scheduler_->QueueChild(iota, proc, name, args);
+}
 void Interpreter::ResetMaps() { ResetMapRoster(*map_roster_); }
 
 void Interpreter::SetRegistrationFunctions(
@@ -193,11 +200,15 @@ void Interpreter::SetRegistrationFunctions(
   prototypes_ = prototypes;
 }
 
-void Interpreter::Import(std::string root_filename) {
-  importer_ = std::make_shared<donk::resources::Importer>(root_filename);
-  importer_->Ingest();
-  importer_->Parse();
-  map_roster_ = std::make_shared<donk::mapping::MapRoster>(importer_->maps());
+void Interpreter::SetEnvironment(
+    std::shared_ptr<donk::Environment> environment) {
+  if (environment == nullptr) {
+    throw std::runtime_error("interpreter passed a null environment");
+  }
+  environment_ = environment;
+  for (const auto& map_name : environment_->GetMapNames()) {
+    map_roster_->AddMap(map_name, *environment_->GetMapData(map_name));
+  }
 }
 
 void Interpreter::ResetMapRoster(donk::mapping::MapRoster& roster) {

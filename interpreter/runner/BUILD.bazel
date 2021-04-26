@@ -1,7 +1,7 @@
 # Donk Project
 # Copyright (c) 2021 Warriorstar Orion <orion@snowfrost.garden>
 # SPDX-License-Identifier: MIT
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//:defs.bzl", "DARWIN_DEFAULT_COPTS", "WINDOWS_DEFAULT_COPTS")
 
 cc_binary(
@@ -18,8 +18,9 @@ cc_binary(
     deps = [
         "@donk//api",
         "@donk//core",
+        "@donk//interpreter/environment:runfiles",
         "@donk//interpreter",
-        "@spdlog",
         "@dtpo",
+        "@spdlog",
     ],
 )

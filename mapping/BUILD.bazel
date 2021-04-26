@@ -10,6 +10,9 @@ cc_library(
         "tgm_parser.cc",
     ],
     hdrs = [
+        "import_map_file.h",
+        "map_roster.h",
+        "map_tile.h",
         "map_view.h",
         "tgm_parser.h",
     ],

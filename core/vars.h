@@ -91,6 +91,9 @@ class var_t {
   var_t& operator+=(std::shared_ptr<iota_t>);
   var_t& operator+=(std::shared_ptr<var_t>);
   var_t& operator+=(path_t);
+  var_t& operator+=(int);
+
+  var_t& operator-=(int);
 
   var_t operator+(const var_t& rhs) const;
   var_t operator-(const var_t& rhs) const;
@@ -178,6 +181,8 @@ class var_table_t {
 
   int size() const { return vars_->size(); }
 
+  void DEBUG__PrintVarTable();
+
   std::shared_ptr<std::map<std::string, std::shared_ptr<var_t>>> vars_;
   friend class donk::networking::ProtoSerializers;
 };
@@ -223,8 +228,8 @@ struct fmt::formatter<::donk::var_t> {
   class VarFormatterVisiter {
    public:
     VarFormatterVisiter(FormatContext& ctx) : ctx_(ctx) {}
-    void operator()(const int& i) { fmt::format_to(ctx_.out(), "{}i", i); }
-    void operator()(const float& f) { fmt::format_to(ctx_.out(), "{}f", f); }
+    void operator()(const int& i) { fmt::format_to(ctx_.out(), "{}", i); }
+    void operator()(const float& f) { fmt::format_to(ctx_.out(), "{}", f); }
     void operator()(const std::string& s) {
       fmt::format_to(ctx_.out(), "{}", s);
     }

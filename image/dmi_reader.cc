@@ -15,7 +15,6 @@ namespace donk {
 namespace image {
 
 void DMIReader::Read() {
-  spdlog::info("DMIReader::Read(): {}", filename_);
   std::ifstream file(filename_, std::ios_base::in | std::ios_base::binary);
   if (file.is_open()) {
     bool valid = validate(file);

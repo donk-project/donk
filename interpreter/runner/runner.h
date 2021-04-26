@@ -11,6 +11,7 @@
 #include "donk/api/root.h"
 #include "donk/core/iota.h"
 #include "donk/core/path.h"
+#include "donk/interpreter/environment/runfiles_environment.h"
 #include "donk/interpreter/interpreter.h"
 #include "spdlog/spdlog.h"
 #include "type_registrar.h"
@@ -24,13 +25,18 @@ namespace runner {
 
 class Runner {
  public:
-  Runner() {
+  Runner(char* argv0) {
     auto collector = std::make_shared<std::map<
         donk::path_t, std::vector<std::function<void(donk::iota_t&)>>>>();
     dtpo::RegisterAll(collector);
     (*collector)[donk::path_t("/")].push_back(donk::api::Register);
 
+    auto environment = std::make_shared<donk::environment::RunfilesEnvironment>(
+        argv0, "snowfrost/snowfrost/FalacyTut/");
+
+    environment->DEBUG__LogFindings();
     interpreter_ = donk::internal::Interpreter::Create();
+    interpreter_->SetEnvironment(environment);
     interpreter_->SetRegistrationFunctions(collector);
     interpreter_->RegisterCoreprocs();
     interpreter_->CreateWorld();

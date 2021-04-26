@@ -45,7 +45,7 @@ class TimeKeeper {
  private:
   std::chrono::time_point<std::chrono::steady_clock> start_;
   std::chrono::time_point<std::chrono::steady_clock> last_tick_;
-  unsigned long tick_count_;
+  unsigned long tick_count_ = 0;
 };
 
 }  // namespace scheduler

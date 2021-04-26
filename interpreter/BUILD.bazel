@@ -8,15 +8,17 @@ cc_library(
     name = "interpreter",
     srcs = [
         "ecs_manager.cc",
-        "importer.cc",
         "interpreter.cc",
+        "running_task.cc",
         "scheduler.cc",
+        "task_stack.cc",
     ],
     hdrs = [
         "ecs_manager.h",
-        "importer.h",
         "interpreter.h",
+        "running_task.h",
         "scheduler.h",
+        "task_stack.h",
         "timekeeper.h",
     ],
     copts = select({
@@ -31,6 +33,7 @@ cc_library(
         "@donk//api",
         "@donk//core",
         "@donk//image",
+        "@donk//interpreter/environment",
         "@entt",
         "@fmtlib",
         "@spdlog",

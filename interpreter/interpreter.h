@@ -39,7 +39,7 @@
 #include "donk/core/procs.h"
 #include "donk/core/vars.h"
 #include "donk/interpreter/ecs_manager.h"
-#include "donk/interpreter/importer.h"
+#include "donk/interpreter/environment/environment.h"
 #include "donk/interpreter/scheduler.h"
 #include "donk/interpreter/timekeeper.h"
 #include "donk/mapping/map_view.h"
@@ -73,20 +73,6 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
     return interpreter;
   }
 
-  virtual ~Interpreter() {}
-
-  std::shared_ptr<donk::resources::Importer> GetImporter() { return importer_; }
-  void Import(std::string root_filename);
-  void ResetMapRoster(donk::mapping::MapRoster& roster);
-  void ResetMaps();
-  void UpdateUuidLinks(std::map<donk::entity_id, std::vector<std::string>>&
-                           update_entity_id_varnames);
-
-  // Differs from world() in that we are returning the known coretype.
-  std::shared_ptr<donk::api::world::world_coretype> GetWorld() {
-    return world_;
-  }
-
   std::shared_ptr<donk::mapping::MapRoster> map() override;
   std::shared_ptr<iota_t> MakeArbitrary(std::string) override;
   std::shared_ptr<iota_t> world() override;
@@ -97,6 +83,30 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
       std::shared_ptr<
           std::map<path_t, std::vector<std::function<void(iota_t&)>>>>)
       override;
+  running_proc_info& QueueChild(std::shared_ptr<iota_t> iota, std::string name,
+                                proc_args_t& args) override;
+  running_proc_info& QueueChild(std::shared_ptr<iota_t> iota,
+                                transpiled_proc proc, std::string name,
+                                proc_args_t& args) override;
+  running_proc_info& QueueProc(std::shared_ptr<iota_t> iota, std::string name,
+                               proc_args_t& args) override;
+  running_proc_info& QueueSpawn(transpiled_proc spawn,
+                                proc_args_t& args) override;
+
+  virtual ~Interpreter() {}
+
+  void Import(std::string root_filename);
+  void ResetMapRoster(donk::mapping::MapRoster& roster);
+  void ResetMaps();
+  void UpdateUuidLinks(std::map<donk::entity_id, std::vector<std::string>>&
+                           update_entity_id_varnames);
+
+  void SetEnvironment(std::shared_ptr<donk::Environment> environment);
+
+  // Differs from world() in that we are returning the known coretype.
+  std::shared_ptr<donk::api::world::world_coretype> GetWorld() {
+    return world_;
+  }
 
   std::shared_ptr<donk::ecs::EcsManager> EcsManager() override {
     return ecs_manager_;
@@ -133,14 +143,12 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
 
   void ExitOnEmptyQueue() { exit_on_empty_queue_ = true; }
 
-  running_proc_info& QueueChild(std::shared_ptr<iota_t> iota, std::string name,
-                                proc_args_t& args) override;
-  running_proc_info& QueueProc(std::shared_ptr<iota_t> iota, std::string name,
-                               proc_args_t& args) override;
-  running_proc_info& QueueSpawn(transpiled_proc spawn,
-                                proc_args_t& args) override;
-
   void Run() {
+    if (!HasEnvironment()) {
+      throw std::runtime_error(
+          "Cannot start interpreter without environment present.");
+    }
+
     spdlog::info("Donk Interpreter active.");
     active_ = true;
     time_keeper_->Start();
@@ -151,6 +159,10 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
   bool Active() override { return active_; }
 
   void Tick() {
+    if (!Active()) {
+      throw std::runtime_error("Tick() called on inactive interpreter");
+    }
+
     if (time_keeper_->Advanced()) {
       auto t = time_keeper_->Tick();
       cppcoro::sync_wait(scheduler_->Work(t));
@@ -167,6 +179,8 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
  private:
   Interpreter();
 
+  bool HasEnvironment() { return environment_ != nullptr; }
+
   // Returns the list of registration functions associated with a given path.
   std::vector<std::function<void(donk::iota_t&)>> FindPrototype(path_t path);
 
@@ -175,11 +189,11 @@ class Interpreter : public std::enable_shared_from_this<Interpreter>,
       std::map<path_t, std::vector<std::function<void(donk::iota_t&)>>>>
       prototypes_;
   std::shared_ptr<donk::api::world::world_coretype> world_;
-  std::shared_ptr<donk::resources::Importer> importer_;
   std::shared_ptr<donk::mapping::MapRoster> map_roster_;
   std::shared_ptr<donk::ecs::EcsManager> ecs_manager_;
   std::shared_ptr<donk::scheduler::Scheduler> scheduler_;
   std::shared_ptr<donk::scheduler::TimeKeeper> time_keeper_;
+  std::shared_ptr<donk::Environment> environment_;
 
   bool active_;
   bool exit_on_empty_queue_ = false;

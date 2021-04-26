@@ -12,36 +12,12 @@
 #include "donk/core/iota.h"
 #include "donk/core/procs.h"
 #include "donk/core/vars.h"
+#include "donk/mapping/map_tile.h"
 #include "donk/mapping/tgm_parser.h"
 #include "spdlog/spdlog.h"
 
 namespace donk {
 namespace mapping {
-
-class MapTile {
- public:
-  MapTile(std::shared_ptr<std::vector<preset_t>> presets) : presets_(presets) {}
-
-  std::shared_ptr<donk::iota_t> turf() { return turf_; }
-
-  std::shared_ptr<std::vector<preset_t>> presets() { return presets_; }
-
-  void area(std::shared_ptr<donk::iota_t> area) { area_ = area; }
-
-  void turf(std::shared_ptr<donk::iota_t> turf) { turf_ = turf; }
-
-  void AddMob(std::shared_ptr<donk::iota_t> mob) { mobs_.push_back(mob); }
-
-  void AddObj(std::shared_ptr<donk::iota_t> obj) { objs_.push_back(obj); }
-
- private:
-  std::shared_ptr<std::vector<preset_t>> presets_;
-  std::vector<std::shared_ptr<donk::iota_t>> objs_;
-  std::shared_ptr<donk::iota_t> area_;
-  std::shared_ptr<donk::iota_t> turf_;
-  std::vector<std::shared_ptr<donk::iota_t>> mobs_;
-  friend class MapRoster;
-};
 
 class MapView {
  public:
@@ -93,32 +69,6 @@ class MapView {
   std::shared_ptr<std::vector<std::shared_ptr<MapTile>>> flat_map_;
 
   friend class MapRoster;
-};
-
-class MapRoster {
- public:
-  MapRoster(std::map<std::string, donk::mapping::map_t> dmm_data)
-      : map_views_(std::make_shared<std::vector<MapView>>()) {
-    for (auto& [filename, dmm_datum] : dmm_data) {
-      map_views_->push_back(MapView(dmm_datum));
-    }
-  }
-
-  std::shared_ptr<MapTile> index(int x, int y, int z) {
-    auto level = map_views_->at(z - 1);
-    auto index = level.index(x - 1, y - 1);
-
-    if (index == nullptr) {
-      spdlog::critical("map view returning null index at {} {} {}", x, y, z);
-    }
-
-    return index;
-  }
-
-  std::shared_ptr<std::vector<MapView>> map_views() { return map_views_; }
-
- private:
-  std::shared_ptr<std::vector<MapView>> map_views_;
 };
 
 }  // namespace mapping
